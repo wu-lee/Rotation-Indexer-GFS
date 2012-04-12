@@ -1,0 +1,26 @@
+---
+name: Rotation-Indexer-GFS
+version: v0.1.0
+author:
+  - 'Nick Stokoe <wu-lee@cpan.org>'
+abstract: compute index numbers for Grandfather-Father-Son backup rotation schemes
+license: artistic
+resources:
+  license: http://www.perlfoundation.org/artistic_license_1_0
+  repository: https://github.com/wu-lee/Rotation-Indexer-GFS
+build_requires:
+  Module::Build: 0.28
+requires:
+  Test::More: 0
+  version: 0.77
+configure_requires:
+  Module::Build: 0.28
+provides:
+  Rotation::Indexer::GFS:
+    file: lib/Rotation/Indexer/GFS.pm
+    version: v0.1.0
+generated_by: Module::Build version 0.340201
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+keywords: []

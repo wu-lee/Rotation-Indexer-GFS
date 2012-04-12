@@ -1,0 +1,195 @@
+NAME
+    Rotation::Indexer::GFS - compute index numbers for
+    Grandfather-Father-Son backup rotation schemes
+
+VERSION
+    This document describes Rotation::Indexer::GFS version 0.1
+
+SYNOPSIS
+    Given a definition of a cyclic rotation scheme (A.K.A. a "Grandfather
+    Father Son" rotation scheme), and an integral sequence number
+    "compute_index" will return an index for it.
+
+        use Rotation::Indexer::GFS;
+
+        my $indexer = Rotation::Indexer::GFS->new(7, 4, 3);
+
+        my $start_day = 0; # or whatever
+        my @index = $indexer->index(today - $start_day); 
+
+        my $backup_file = join("-", @index) . ".backup"; # 0-0-0.backup
+
+DESCRIPTION
+  Why use this module?
+    Suppose you have a file for which you want a rotating back-up: you want
+    a backed-up copy of the file from each day in the last week.
+
+    To keep the backup script simple you might name the copy after the day
+    of the week: "$dow.backup". Then when Monday rolls around again, the
+    script simply copies the latest version over the file "Monday.backup".
+    In other words, you don't need to explicitly prune old files because
+    they get overwritten by newer ones.
+
+    Now imagine a more complicated use case: you want a nested backup
+    rotation scheme: one copy for each day of the last week, one from each
+    week in the last month, and one for each of the last three months. You
+    might attempt to invent a naming scheme like "$month-$week-$day", but it
+    gets tricky because you can't simply use names like before (unless
+    you're happy with the schedule that calendar names impose on you).
+
+    This is what Rotation::Indexer::GFS is for: naming backups so that you
+    don't need to explicitly prune old files because they get overwritten by
+    newer ones. Except it supports arbitrarily nested rotations (so long as
+    they're regular).
+
+    For example, given a nested list of rotation periods like this:
+
+        7, 4, 3
+
+    Which means, keep a copy for:
+
+    *   each of the last 7 days (i.e. 1 week),
+
+    *   each week of the 4x7 days (i.e. 1 month), and
+
+    *   each month of the last 3x4x7 days (i.e. 3 months).
+
+    Rotation::Indexer::GFS can calculate an index for any day after (or
+    before) the start date which maps the day into a "slot" in your rotation
+    scheme. Anything in that slot can be overwritten. The scheme guarantees
+    you have at least one copy from each hierarchy in the cycle.
+
+        my $indexer = Rotation::Indexer::GFS->new(7, 4, 3);
+
+        my $start_day = 0; # or whatever
+        my @index = $indexer->index(today - $start_day); 
+
+        my $backup_file = join("-", @index) . ".backup"; # 0-0-0.backup
+
+    Using an index to implement your backup script makes your (log, backup
+    or otherwise) script simpler and less error prone: if your backups are
+    named like this example, you don't even need to query your backup store
+    to see what to prune.
+
+    Saying that, you might prefer to insert additional data into your file
+    name, like this:
+
+        my $backup_file = sprintf "%s-%s-%s.%d-%d-%d.backup", $year, $month, $day, @index;
+
+    In this case you *do* need to prune the files, but having a unique index
+    for rotations like this makes it relatively easy to find files to prune
+    - simply delete any file with the same index as a newer one.
+
+  Cycle example
+    For example, given
+
+        $ixr = Rotation::Indexer::GFS->new(3, 2, 2);
+
+    And assuming you generate an index like this:
+
+        $ID = join '-', $ixr->index($day)
+
+    Then the sequence of indexes would be:
+
+        # $day  $ID
+            0   0-0-0
+            1   1
+            2   2
+            3   0-1
+            4   1
+            5   2
+            6   0-0-1
+            7   1
+            8   2
+            9   0-1
+           10   1
+           11   2
+
+    The slots are therefore:
+
+          1
+          2
+          0-1
+          0-0-0
+          0-0-1
+
+    i.e You will be keeping a maximum of 5 copies.
+
+INTERFACE
+  "$obj = $class->new(@cycles)"
+    Creates a new instance which an be used to generate indexes for the
+    given nested cycle periods.
+
+  "@index = $obj->index($offset)"
+    Generates the index number for a given offset from the start. $offset
+    can be any positive or negative number/ Floating point values will be
+    truncated using "int" to get an integer offset.
+
+    It returns a list of one or more positive integers. The maximum length
+    of this list is the number of cycles.
+
+  "@cycles = $obj->cycles"
+    Returns the cycle periods supplied to the constructor.
+
+DIAGNOSTICS
+    "there must be at least one cycle"
+        You called the constructor with no arguments.
+
+    "the following cycle sizes are not positive integers: ..."
+        You called the constructor with invalid arguments.
+
+    "you must supply an offset"
+        You called the index function with no arguments.
+
+    "too many arguments"
+        You called the index function with more than one argument.
+
+CONFIGURATION AND ENVIRONMENT
+    Rotation::Indexer::GFS requires no configuration files or environment
+    variables.
+
+DEPENDENCIES
+    None.
+
+INCOMPATIBILITIES
+    None reported.
+
+BUGS AND LIMITATIONS
+    No bugs have been reported.
+
+    Please report any bugs or feature requests to
+    "bug-Rotation-Indexer-GFS@rt.cpan.org", or through the web interface at
+    <http://rt.cpan.org>.
+
+AUTHOR
+    Nick Stokoe "<wu-lee@cpan.org>"
+
+LICENCE AND COPYRIGHT
+    Copyright (c) 2012, Nick Stokoe "<wu-lee@cpan.org>". All rights
+    reserved.
+
+    This module is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself. See perlartistic.
+
+DISCLAIMER OF WARRANTY
+    BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+    FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
+    OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+    PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+    EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
+    ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH
+    YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL
+    NECESSARY SERVICING, REPAIR, OR CORRECTION.
+
+    IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+    WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+    REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENCE, BE LIABLE
+    TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL, OR
+    CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE
+    SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING
+    RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
+    FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
+    SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+    DAMAGES.
+
